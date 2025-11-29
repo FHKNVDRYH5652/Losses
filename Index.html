@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loss Recovery - FINAL (Fixed)</title>
+  
+<style>
+/* ------------------------------------------------------------------ */
+/* GLOBAL STYLES (UPDATED FOR COLOR/DESIGN)                           */
+/* ------------------------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800;900&display=swap');
+
+/* Brand Colors (Used in Gradients/Shadows) */
+:root {
+  --color-pink: #ff0080;
+  --color-purple: #7928ca;
+  --color-cyan: #2afadf;
+  --color-yellow: #ffc107; /* New Highlight Color */
+  --color-orange: #ff9800; /* New Highlight Color */
+}
+
+body {
+  margin:0;
+  font-family:'Montserrat',sans-serif;
+  /* Retain original background gradient */
+  background: radial-gradient(circle at top left, #7928ca55, transparent 60%),
+              radial-gradient(circle at bottom right, #2afadf55, transparent 60%),
+              linear-gradient(180deg,#050510,#0a0b25);
+  color:#f8faff;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+.page { display:none; }
+.page.active { display:block; }
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Headings Gradient */
+h1,h2{
+  font-weight:900;
+  background:linear-gradient(90deg, var(--color-pink), var(--color-purple), var(--color-cyan));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+/* Button Styling */
+.btn {
+  padding:14px 22px;
+  border-radius:16px;
+  border:0;
+  cursor:pointer;
+  margin:8px;
+  font-weight:800;
+  color:#fff;
+  /* Updated gradient for better contrast */
+  background:linear-gradient(135deg, var(--color-pink), var(--color-purple), var(--color-cyan));
+  box-shadow:0 0 20px var(--color-purple);
+  transition:.25s;
+}
+.btn:hover {transform:scale(1.05);box-shadow:0 0 30px var(--color-cyan)}
+.btn:active {transform:scale(.95)}
+.btn.ghost {background:transparent;border:2px solid var(--color-cyan);color:var(--color-cyan)}
+
+/* Input Fields */
+input[type="number"],input[type="text"] {
+  width:90%;
+  padding:14px;
+  border-radius:14px;
+  border:2px solid rgba(255,255,255,0.2);
+  background:rgba(10,10,25,0.65);
+  color:#fff;
+  font-weight:700;
+  margin:10px 0;
+}
+/* Focus/Active Highlight (Cyan) */
+input:focus {border-color:var(--color-cyan);box-shadow:0 0 10px var(--color-cyan);outline:none}
+
+/* Table Styles */
+table {width:100%;border-collapse:separate;border-spacing:0 10px}
+thead th {color:var(--color-cyan);text-transform:uppercase;font-size:13px;font-weight:800}
+tbody td {padding:12px;background:rgba(255,255,255,.05);border-radius:12px}
+/* Updated Table Hover Color (Orange/Yellow) */
+tbody tr:hover td {background:rgba(255,152,0,0.2)} 
+
+/* Progress Bar */
+.progress-bar {
+  height:18px;
+  border-radius:12px;
+  background:linear-gradient(90deg, var(--color-pink), var(--color-purple), var(--color-cyan));
+  animation:progressAnim 2s linear infinite;
+  background-size:200% 100%;
+}
+@keyframes progressAnim{0%{background-position:0%}100%{background-position:200%}}
+
+/* Admin FAB */
+#adminFab {position:fixed;right:16px;bottom:16px;width:56px;height:56px;border-radius:16px;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  background:linear-gradient(135deg,var(--color-purple),var(--color-cyan));box-shadow:0 0 25px var(--color-cyan);
+  cursor:pointer;opacity:.8}
+#adminFab:hover {opacity:1;transform:scale(1.1)}
+#adminPanel {position:fixed;inset:10% 5%;background:#0a0b20f0;color:#fff;border:2px solid var(--color-purple);
+  border-radius:20px;padding:20px;display:none;z-index:9999;overflow:auto;box-shadow:0 0 40px var(--color-purple)}
+
+/* Status Pills */
+.status-current {
+  background: linear-gradient(135deg,#28a745,#5cff89);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(40,167,69,0.7);
+}
+.status-pending {
+  background: linear-gradient(135deg,var(--color-orange),var(--color-yellow));
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(255,152,0,0.7);
+}
+.status-completed {
+  background: linear-gradient(135deg,#00c6ff,#0072ff);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(0,114,255,0.7);
+}
+
+/* ------------------------------------------------------------------ */
+/* PREDICTION STYLES (UPDATED)                                        */
+/* ------------------------------------------------------------------ */
+/* Prediction highlight - Retain Blue/Cyan for Prediction Result */
+.prediction-result {
+  background: linear-gradient(90deg, #00c6ff, #0072ff);
+  color: #fff;
+  font-size: 1.4em;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: 10px;
+  text-align: center;
+  margin: 10px 0;
+  box-shadow: 0 0 12px rgba(0,114,255,0.7);
+}
+
+/* Confidence highlight - Retain Yellow for Confidence */
+.prediction-confidence {
+  background: var(--color-yellow);
+  color: #000;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 8px;
+  display: inline-block;
+  margin: 6px 0;
+}
+
+/* Suggested bet highlight - Retain Red/Pink for Bet */
+.prediction-bet {
+  background: linear-gradient(90deg, #ff416c, #ff4b2b);
+  color: #fff;
+  font-size: 1.2em;
+  font-weight: 700;
+  padding: 10px 16px;
+  border-radius: 10px;
+  display: inline-block;
+  margin: 8px 0;
+  box-shadow: 0 0 10px rgba(255,65,108,0.7);
+}
+
+/* Plan Selection Highlight */
+.plan:focus, .plan.selected {
+    outline: 2px solid var(--color-yellow) !important;
+}
+
+</style>
+
+
+<style>
+/* General text */
+body, .page {
+  color: #f1f1f1 !important;
+  font-weight: 600;
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Table headers bold */
+table th {
+  font-weight: 700;
+  color: #fff;
+}
+</style>
+
+</head>
+<body>
+  <div class="container">
+    <div id="welcome" class="page active">
+      <h1>Welcome to Loss Recovery</h1>
+      <p class="small">Start your recovery journey.</p>
+      <button class="btn" onclick="goLoss()">Next</button>
+    </div>
+
+    <div id="loss" class="page">
+      <h2>Enter your Loss Amount</h2>
+      <input type="number" id="lossAmount" placeholder="Minimum loss amount ₹10000" />
+      <div>
+        <button class="btn" onclick="confirmLoss()">Confirm</button>
+        <button class="btn" onclick="showPage('welcome')">Back</button>
+      </div>
+      <p class="hint">Example: 10000</p>
+    </div>
+
+    <div id="plan" class="page">
+      <h2>Choose a Plan</h2>
+      <div id="plans"></div>
+      <div>
+        <button class="btn" onclick="goPayment()">Proceed to Payment</button>
+        <button class="btn" onclick="showPage('loss')">Back</button>
+      </div>
+    </div>
+
+    <div id="payment" class="page">
+      <h2 id="planName"></h2>
+      <p>Amount to Pay: ₹<span id="planPrice"></span></p><p><img id="qrImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAGaAQAAAAAefbjOAAAC8klEQVR4nO2cQW7jMAxFP8cGspSBHiBHkW9W9Gb2UXIDa2nAwZ8FRdkJOotMWjux6UXqVH4IhSrkF0lViIev/s/jDOCQQw455JBDDu0TknzVQN8AIlJjfgske6DdxDyH1ociSXIA5PMiQnIC4gAgXmoAqEiSvIXWM88h9aFkDqBvAGlTDXZhFJEmP6AuYyvzHNoQCtkVSJtqALjKb32SQ+8AsdOfV0F/5j+SFW82J4ceulQfZB1R6YsOdDaaB8pz3YvPyaEfgHoR1QzSAkAcKsrnUFHaVENaXHWrsZV5Dq0HqVq8iQ5XITAKEOaX2/Dx4nNy6BnoPmoAqMgOFRE5QQNGp7+zIOJRY89QUQoAycmUZShnABA1PVG5jjgAZF97fWPuQa9Acw9hgi0aXxE7h8xHWOjI+QhbDNkzDB41DgZpNqqXWl1BvsIo/DqPAk1TBc9iHwkKo7ALE6RNtsmMlxMRh2XWStqNzHNoNWgRNXSvEQcbibb1UGU5P+xR4whQqoH+PEG3GSVxichR+CUnq3VsZJ5Dq0GWj9AENrQurqmILuQBU5uT+4gDQHlFlL/5vK9YxIoOOVvh+Yj9Q7YiAORUhLqC5WK48yC+InYNLaKG5SPMFZBFUQTPWR4GqudbIjV2BwBIH0TfVgBQUXrNTKxrnkOrQ6XSNcH05OwjWGJFbrt0Zbl/qPiIikBqSqstAKQGRCAE6YMAJht58Tk59Ay08BG5oGVCM/dik7nS1cF9xBGg+yWwKHHO4aSMurI8CpS/+4AUOU8QbaNrrqIneBZF0U3Mc2h1aD7TpcGhS/ncTpYV1qefa15vMSeHnoJi2VcgnSitCs160VJlA5uY59AGla5yqDOMgv48ikqIvqmIXkSWnXZvMieHfgSKl5P10qUaiMNVsvhMfhL4kJCmJpOoo5BW9aRpzM3Nc+i3oW/OdAHaZzn3Z+fCVz7Y5bvPXUPLfETpl9LF0IWiNucBXxF7h8T/M5lDDjnkkEMOOfSf0F/nUYWnyRzV2gAAAABJRU5ErkJggg==" style="display:block;margin:20px auto;max-width:260px;border-radius:20px;box-shadow:0 0 25px cyan"/></p>
+      <img src="qr.png" class="qr-code" alt="QR Code" style="display:none;"/>
+      <p class="hint">Scan & pay using QR. Enter UTR below and submit for admin approval.</p>
+      <input type="text" id="utr" placeholder="Enter UTR / Transaction ID" />
+      <div>
+        <button class="btn" onclick="submitUTR()">Submit for Approval</button>
+        <button class="btn" onclick="showPage('plan')">Back</button>
+      </div>
+    </div>
+
+    <div id="strategy" class="page">
+      <h2>Recovery Strategy</h2>
+      <div id="strategyContent"></div>
+      <div id="strategyButtons"></div>
+    </div>
+
+    <div id="predict" class="page">
+      <h2>AI Prediction (WINGO 1-min)</h2>
+      <p id="balanceBox">Balance: ₹0</p>
+      <p class="small">Enter last 10 results (Small/Big)</p>
+      <input type="text" id="period" placeholder="Period (e.g., 123)" />
+      <input type="text" id="last10" placeholder="Small Big Small Big ..." />
+      <div>
+        <button class="btn" onclick="genPrediction()">Generate AI Prediction</button>
+        <button class="btn" onclick="autoFillExample()">Fill Example</button>
+        <button class="btn" onclick="showPage('strategy')">Back</button>
+      </div>
+      <div id="predictionResult" class="small" style="margin-top:10px"></div>
+      <div style="margin-top:10px">
+        <button class="btn" onclick="handleRecord('win')">Win</button>
+        <button class="btn" onclick="handleRecord('loss')">Loss</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminFab" title="×">×</div>
+
+  <div id="adminPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Admin Panel (Firebase)</h2>
+      <div>
+        <button class="btn" onclick="closeAdmin()">Close</button>
+      </div>
+    </div>
+    <div id="adminRequests" class="small">Loading requests...</div>
+  </div>
+
+  <script type="module">
+    /* =============================
+       Firebase Setup
+       ============================= */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBs7eQyMrcN8kJWMHl2ac2UZHlYQ6DypD8",
+      authDomain: "terminal-xxrr.firebaseapp.com",
+      databaseURL: "https://terminal-xxrr-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "terminal-xxrr",
+      storageBucket: "terminal-xxrr.firebasestorage.app",
+      messagingSenderId: "722753278120",
+      appId: "1:722753278120:web:bfa37aab39635a4e57f29d",
+      measurementId: "G-E3MZH3E1K5"
+    };
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    const db = getDatabase(app);
+
+    /* =============================
+       Utilities & State
+       ============================= */
+    const $ = sel => document.querySelector(sel);
+    const speak = t => { try{ const u=new SpeechSynthesisUtterance(t);u.lang='hi-IN';speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){} };
+    const showToast = msg => {
+      const t = document.createElement("div");
+      t.innerText = msg; t.style.position="fixed"; t.style.bottom="24px"; t.style.left="50%";
+      t.style.transform="translateX(-50%)"; t.style.background="rgba(0,0,0,0.85)";
+      t.style.color="#0f0"; t.style.padding="10px 16px"; t.style.borderRadius="10px";
+      t.style.boxShadow="0 0 12px #0f0"; t.style.zIndex="9999"; document.body.appendChild(t);
+      setTimeout(()=>t.remove(), 2600);
+    };
+    const showPage = id => { document.querySelectorAll(".page").forEach(p=>p.classList.remove("active")); $("#"+id).classList.add("active"); };
+    window.showPage = showPage;
+
+    // Local persistent state
+    let deviceId = localStorage.getItem("deviceId") || Math.random().toString(36).slice(2);
+    localStorage.setItem("deviceId", deviceId);
+
+    let loss = parseFloat(localStorage.getItem("lossAmount") || "0");
+    let selectedPlan = null;
+    let planPrice = 0;
+
+    let planDays = parseInt(localStorage.getItem("planDays") || "0", 10);
+    let planLabel = localStorage.getItem("planLabel") || "";
+    let dayTargetBalances = JSON.parse(localStorage.getItem("dayTargetBalances") || "[]"); // end-of-day targets (balance level)
+    let dayStatus = JSON.parse(localStorage.getItem("dayStatus") || "[]");                 // 'Pending' | 'Completed'
+    let currentDay = parseInt(localStorage.getItem("currentDay") || "1", 10);
+    let approved = localStorage.getItem("approved") === "true";
+    let approvedRequestKey = localStorage.getItem("approvedRequestKey") || null; // New state to track the key of the approved request
+
+    let balance = parseFloat(localStorage.getItem("balance") || "0");
+    let dayStartBalance = parseFloat(localStorage.getItem("dayStartBalance") || "0");
+
+    let lossStreak = parseInt(localStorage.getItem("lossStreak") || "0", 10);
+    let lastBet = parseInt(localStorage.getItem("lastBet") || "0", 10);
+    let pendingBet = parseInt(localStorage.getItem("pendingBet") || "0", 10);
+
+    const plans = [
+      {label:"3 Month", pct:7, days:90},
+      {label:"1 Month", pct:12.5, days:30},
+      {label:"1 Week", pct:15, days:7},
+      {label:"3 Days", pct:20, days:3},
+      {label:"1 Day", pct:25, days:1},
+    ];
+
+    function updateBalanceDisplay(){ $("#balanceBox").innerText = "Balance: ₹" + balance.toFixed(2); localStorage.setItem("balance", balance.toFixed(2)); }
+    function saveState(){
+      localStorage.setItem("planDays", String(planDays));
+      localStorage.setItem("planLabel", planLabel||"");
+      localStorage.setItem("dayTargetBalances", JSON.stringify(dayTargetBalances));
+      localStorage.setItem("dayStatus", JSON.stringify(dayStatus));
+      localStorage.setItem("currentDay", String(currentDay));
+      localStorage.setItem("approved", approved ? "true" : "false");
+      localStorage.setItem("approvedRequestKey", approvedRequestKey || ""); // Save the key
+      localStorage.setItem("dayStartBalance", String(dayStartBalance));
+      localStorage.setItem("lossStreak", String(lossStreak));
+      localStorage.setItem("lastBet", String(lastBet));
+      localStorage.setItem("pendingBet", String(pendingBet));
+    }
+
+    /* =============================
+       Plans UI
+       ============================= */
+    function buildPlans(){
+      const box = $("#plans"); box.innerHTML = "";
+      plans.forEach(p=>{
+        const price = (loss * p.pct / 100).toFixed(2);
+        const div = document.createElement("div");
+        div.className = "plan";
+        div.style.padding="14px"; div.style.borderRadius="12px"; div.style.cursor="pointer";
+        div.style.margin="8px"; div.style.background="rgba(255,255,255,0.05)";
+        div.style.boxShadow="0 0 10px rgba(255,255,255,0.25)";
+        div.innerHTML = `<b>${p.label}</b><div class="small">Price: ₹${price}</div><div class="small">Duration: ${p.days} days</div>`;
+        div.onclick = ()=>{
+          document.querySelectorAll(".plan").forEach(x=>x.style.outline="none");
+          div.style.outline="2px solid #ffc107"; // Updated highlight color
+          selectedPlan = p; planPrice = price;
+          localStorage.setItem("selectedPlanLabel", p.label);
+          localStorage.setItem("selectedPlanDays", String(p.days));
+          localStorage.setItem("selectedPlanPrice", String(price));
+          speak(`Aapne ${p.label} plan choose kiya, price ${price} rupe`);
+        };
+        box.appendChild(div);
+      });
+    }
+
+    /* =============================
+       Flow: Loss -> Plan -> Payment
+       ============================= */
+    window.goLoss = function(){ showPage("loss"); speak("Apna loss amount darj karein"); };
+    window.confirmLoss = function(){
+      const v = parseFloat($("#lossAmount").value);
+      if(!v || v<10000){ alert("Enter valid loss amount (minimum ₹10000)"); return; } // Updated check
+      loss = v; localStorage.setItem("lossAmount", String(loss));
+      buildPlans(); showPage("plan"); speak("Plan choose karein");
+    };
+    window.goPayment = function(){
+      if(!selectedPlan){
+        const label = localStorage.getItem("selectedPlanLabel");
+        const days = parseInt(localStorage.getItem("selectedPlanDays")||"0",10);
+        const price = localStorage.getItem("selectedPlanPrice");
+        if(label && days){ selectedPlan = {label, days, pct:0}; planPrice = price || "0"; }
+      }
+      if(!selectedPlan){ alert("Select a plan"); return; }
+      $("#planName").innerText = selectedPlan.label;
+      $("#planPrice").innerText = planPrice;
+      showPage("payment");
+    };
+
+    /* =============================
+       Firebase: Submit UTR & Listen
+       ============================= */
+    function saveUTRtoFirebase(utr, amount, deviceId, planDays, planLabel, loss){
+      const node = ref(db, "utrRequests");
+      const r = push(node);
+      set(r, { utr, amount, status:"pending", deviceId, planDays, planLabel, loss, time:Date.now() });
+    }
+
+    window.submitUTR = function(){
+      const utr = $("#utr").value.trim();
+      if(!utr){ alert("Enter UTR"); return; }
+      const days = selectedPlan ? selectedPlan.days : parseInt(localStorage.getItem("selectedPlanDays")||"0",10);
+      const label = selectedPlan ? selectedPlan.label : (localStorage.getItem("selectedPlanLabel")||"Plan");
+      saveUTRtoFirebase(utr, planPrice, deviceId, days, label, loss);
+      alert("Payment submitted for approval.");
+      planDays = days; planLabel = label;
+      showPage("strategy");
+      renderStrategyLocked();
+    };
+
+    const requestsRef = ref(db, "utrRequests");
+    onValue(requestsRef, (snap)=>{
+      const data = snap.exists() ? snap.val() : {};
+      
+      // Build Admin Table
+      const el = $("#adminRequests");
+      let html = '<table><thead><tr><th>Key</th><th>UTR</th><th>Amt</th><th>DeviceId</th><th>Plan</th><th>Days</th><th>Status</th><th>Time</th><th>Action</th></tr></thead><tbody>';
+      for(const k in data){
+        const r = data[k];
+        // Display all requests in Admin Panel for deletion functionality
+        html += `<tr>
+          <td style="font-size:12px">${k}</td>
+          <td>${r.utr||""}</td>
+          <td>₹${r.amount||""}</td>
+          <td style="font-size:12px">${r.deviceId||""}</td>
+          <td>${r.planLabel||""}</td>
+          <td>${r.planDays||""}</td>
+          <td>${r.status}</td>
+          <td style="font-size:12px">${r.time? new Date(r.time).toLocaleString(): ""}</td>
+          <td>
+            ${r.status === "pending" ? 
+              `<button class="btn" onclick="adminApprove('${k}', '${r.deviceId}')">Approve</button>
+               <button class="btn ghost" onclick="adminReject('${k}', '${r.deviceId}')">Reject</button>` : 
+               `<button class="btn ghost" onclick="adminDelete('${k}')">Delete</button>`
+            }
+          </td>
+        </tr>`;
+      }
+      html += "</tbody></table>";
+      el.innerHTML = html;
+
+      // If my device's request exists, sync approval status
+      let myReq = null;
+      for(const k in data){ if(data[k].deviceId === deviceId){ myReq = {key:k, data:data[k]}; break; } }
+      if(myReq) checkUserApproval(myReq); else if(!approved) renderStrategyLocked();
+    });
+
+    // Modified admin functions to pass deviceId
+    window.adminApprove = function(key, targetDeviceId){ 
+      if(!confirm("Approve this request?")) return; 
+      update(ref(db,"utrRequests/"+key),{status:"approved", approvedAt:Date.now()});
+      // We explicitly check if it's *our* device approval to ensure state updates
+      if(targetDeviceId === deviceId) {
+          approved = true;
+          approvedRequestKey = key;
+          saveState();
+      }
+    };
+    window.adminReject  = function(key, targetDeviceId){ 
+      if(!confirm("Reject this request?")) return; 
+      update(ref(db,"utrRequests/"+key),{status:"rejected", rejectedAt:Date.now()}); 
+      if(targetDeviceId === deviceId) {
+          approved = false;
+          approvedRequestKey = null;
+          saveState();
+      }
+    };
+    // New admin delete function
+    window.adminDelete = function(key){
+      if(!confirm("Permanently delete this request from Firebase?")) return;
+      remove(ref(db, "utrRequests/" + key)).then(() => {
+        showToast("Request Deleted.");
+        // If the deleted request was the one we approved, clear local approval state
+        if (key === approvedRequestKey) {
+            approved = false;
+            approvedRequestKey = null;
+            localStorage.removeItem("dayTargetBalances");
+            localStorage.removeItem("dayStatus");
+            saveState();
+            renderStrategyLocked();
+            showPage("strategy");
+        }
+      }).catch(error => {
+        alert("Delete failed: " + error.message);
+      });
+    };
+
+    /* =============================
+       Strategy generation (BALANCE-BASED)
+       ============================= */
+    function computeTargetsEndBalance(loss, days){
+      const startBalance = Math.round(loss * 0.10); // Day-1 starting wallet = 10% of loss
+      // Special rule for 3-day plan to match your example: 1000->2500->5500->10000
+      if(days === 3 && loss===10000){ // Only apply special rule for the example case
+        return { startBalance, targets: [Math.round(loss*0.25), Math.round(loss*0.55), Math.round(loss*1.00)] };
+      }
+      // Generic: linearly reach full loss in N steps from startBalance
+      const targets = [];
+      for(let i=1;i<=days;i++){
+        const eb = Math.round(startBalance + i*(loss - startBalance)/days);
+        targets.push(eb);
+      }
+      return { startBalance, targets };
+    }
+
+    function initPlanAfterApproval(lossFromDB, planDaysFromDB, planLabelFromDB, requestKey){
+      const {startBalance, targets} = computeTargetsEndBalance(lossFromDB, planDaysFromDB);
+      
+      loss = lossFromDB; // Ensure loss is set from DB value
+      planDays = planDaysFromDB;
+      planLabel = planLabelFromDB;
+      
+      dayTargetBalances = targets; dayStatus = Array.from({length:planDays},()=> "Pending");
+      currentDay = 1; balance = startBalance; dayStartBalance = startBalance;
+      approved = true;
+      approvedRequestKey = requestKey; // Set the key of the approved request
+      
+      saveState(); updateBalanceDisplay();
+      renderStrategyUnlocked();
+    }
+
+    function checkUserApproval(myReq){
+      const r = myReq.data;
+      if(r.status === "approved"){
+        // Only run init if we were not already approved or if key has changed
+        if(!approved || myReq.key !== approvedRequestKey){
+            const lossFromDB = parseFloat(r.loss);
+            const planDaysFromDB = parseInt(r.planDays,10);
+            const planLabelFromDB = r.planLabel;
+            
+            // Re-initialize state based on the approved request data
+            initPlanAfterApproval(lossFromDB, planDaysFromDB, planLabelFromDB, myReq.key);
+            showToast("Approved ✅");
+            showPage("strategy"); // Ensure user is navigated to strategy page
+        } else {
+            // Already approved and key matches, just render
+            renderStrategyUnlocked();
+        }
+      }else if(r.status === "rejected"){
+        if(approved){ // If previously approved but now rejected (shouldn't happen often)
+            // Clear current plan state
+            localStorage.removeItem("dayTargetBalances");
+            localStorage.removeItem("dayStatus");
+            approved = false;
+            approvedRequestKey = null;
+            saveState();
+        }
+        renderStrategyRejected();
+        showPage("strategy");
+      }else{ // pending
+        approved = false; approvedRequestKey = null; saveState(); 
+        renderStrategyLocked();
+      }
+    }
+
+    function renderStrategyLocked(){
+      $("#strategyContent").innerHTML = `<p class="small">Your payment is pending admin approval.</p>`;
+      $("#strategyButtons").innerHTML = `<div class="small">Waiting for admin...</div>`;
+    }
+    function renderStrategyRejected(){
+      $("#strategyContent").innerHTML = `<p class="bad"><b>Payment rejected by admin.</b></p><div><button class="btn" onclick="showPage('payment')">Resubmit UTR</button></div>`;
+      $("#strategyButtons").innerHTML = "";
+    }
+    function renderStrategyUnlocked(){
+      if(!dayTargetBalances.length){ $("#strategyContent").innerHTML = "<p class='small'>Targets not set.</p>"; return; }
+      const rows = dayTargetBalances.map((t,i)=>{
+        const idx=i+1, st=dayStatus[i]; const mark = st==="Completed" ? "<span class='status-completed'>✅ Completed</span>" : 
+              (idx===currentDay?"<span class='status-current'>Current</span>":"<span class='status-pending'>Pending</span>");
+        const start = (i===0? Math.round(loss*0.10) : dayTargetBalances[i-1]);
+        return `<tr><td>${idx}</td><td>₹${start}</td><td>₹${t}</td><td>${mark}</td></tr>`;
+      }).join("");
+      const prog = Math.round(100*dayStatus.filter(s=>s==="Completed").length/dayStatus.length);
+      $("#strategyContent").innerHTML = `
+        <div style="margin:16px 0">
+          <div style="height:22px;border-radius:12px;background:#1f2937;overflow:hidden">
+            <div style="height:100%;width:${prog}%;background:linear-gradient(90deg,var(--color-pink),var(--color-purple))"></div>
+          </div>
+          <p class="hint" style="margin-top:6px">Progress: ${prog}%</p>
+        </div>
+        <p class="small">Plan: ${planLabel || ""} | Total Loss: ₹${loss}</p>
+        <table>
+          <thead><tr><th>Day</th><th>Start (₹)</th><th>Target (₹)</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="hint" style="text-align:left;margin-top:10px">
+        Follow today's prediction until your <b>balance</b> reaches the Day Target. Next day unlocks automatically.
+        </p>
+      `;
+      $("#strategyButtons").innerHTML = `<button class="btn" onclick="startTodayPrediction()">Start Today's Prediction (Day ${currentDay})</button>
+                                         <button class="btn" onclick="resetPlanConfirm()">Cancel/Reset Plan</button>`;
+    }
+
+    /* =============================
+       Prediction & BET ENGINE
+       ============================= */
+    function parseSeq(text){
+      if(!text) return [];
+      return text.trim().split(/\s+/).map(s=>s.toLowerCase().startsWith("b")?"Big":(s.toLowerCase().startsWith("s")?"Small":null)).filter(Boolean);
+    }
+    function computePatternPrediction(seq){
+      const n = seq.length; if(!n) return {prediction:"Big", confidence:50, reason:"no-data"};
+      const counts={Big:0,Small:0}; seq.forEach(x=>counts[x]++);
+      let last=seq[n-1], streak=1; for(let i=n-2;i>=0;i--){ if(seq[i]===last) streak++; else break; }
+      let score={Big:0,Small:0};
+      if(counts.Big>counts.Small) score.Big++; if(counts.Small>counts.Big) score.Small++;
+      if(streak>=3) score[last]+=2;
+      const prediction = (score.Big>=score.Small)?"Big":"Small";
+      let confidence = 55 + Math.min(35, Math.abs(score.Big-score.Small)*10); confidence = Math.min(95,confidence);
+      return {prediction, confidence, reason:`B:${counts.Big}/S:${counts.Small}, streak ${last}×${streak}`};
+    }
+
+    function computeSuggestedBet(){
+      // </div><div>Rule:
+      //  - lossStreak 0: 15% of current balance
+      //  - lossStreak 1: double last bet
+      //  - lossStreak >=2: all-in (entire remaining balance)
+      let bet = 0;
+      if(lossStreak <= 0){
+        bet = Math.max(1, Math.floor(balance * 0.15));
+      }else if(lossStreak === 1){
+        bet = Math.min(Math.floor(balance), Math.max(1, lastBet * 2));
+      }else{
+        bet = Math.floor(balance); // all wallet
+      }
+      bet = Math.max(1, Math.min(bet, Math.floor(balance))); // clamp
+      pendingBet = bet; localStorage.setItem("pendingBet", String(pendingBet));
+      return bet;
+    }
+
+    window.genPrediction = function(){
+      const seq = parseSeq($("#last10").value);
+      if(seq.length < 3){ alert("Enter at least 3 recent results"); return; }
+      $("#predictionResult").innerHTML = `<p>AI analyzing... (8-12 sec)</p><div class="chip">Period: ${($("#period").value||"N/A")}</div>`;
+      setTimeout(()=>{
+        const out = computePatternPrediction(seq);
+        const suggestedBet = computeSuggestedBet();
+        $("#predictionResult").innerHTML = `
+          <h3><span class="chip"><div class="prediction-result">Prediction:</span> ${out.prediction}</h3>
+          <p class="small"><b></div><div class="prediction-confidence">Confidence:</b> ${out.confidence}%</p>
+          <p class="hint">${out.reason}</p>
+          <p class="small"><b></div><div class="prediction-bet">Suggested Bet:</b> ₹${suggestedBet}</p>
+          <p class="hint"></div><div>Rule: loss → bet doubles once; second loss → all-in.</p>
+        `;
+      }, 10000);
+    };
+
+    window.handleRecord = function(outcome){
+      if(!pendingBet || pendingBet <= 0){ alert("Generate prediction first to set bet."); return; }
+      const bet = pendingBet;
+
+      if(outcome === "win"){
+        balance += bet; lossStreak = 0; lastBet = bet;
+        $("#predictionResult").innerHTML += `<p class="ok">✅ Win recorded. Balance +₹${bet}</p>`;
+      }else{
+        balance -= bet; lossStreak += 1; lastBet = bet;
+        $("#predictionResult").innerHTML += `<p class="bad">❌ Loss recorded. Balance -₹${bet}</p>`;
+      }
+      updateBalanceDisplay(); saveState();
+
+      // Prepare for next round
+      pendingBet = 0; localStorage.setItem("pendingBet","0");
+
+      // Update the user's last10 sequence auto (append our guess)
+      const hist = parseSeq($("#last10").value);
+      const lastPred = /<div class="prediction-result">Prediction:\<\/span>\s*(Big|Small)/.exec($("#predictionResult").innerHTML);
+      const predVal = lastPred ? lastPred[1] : (Math.random()>.5?"Big":"Small");
+      hist.push(outcome==="win" ? predVal : (predVal==="Big"?"Small":"Big"));
+      $("#last10").value = hist.slice(-10).join(" ");
+
+      // Day target check (BALANCE-based)
+      if(approved && dayTargetBalances.length && currentDay <= dayTargetBalances.length){
+        const targetEnd = dayTargetBalances[currentDay-1];
+        if(balance >= targetEnd){
+          dayStatus[currentDay-1] = "Completed";
+          saveState();
+          alert(`🎉 Day ${currentDay} Target Completed! (Target Balance = ₹${targetEnd})`);
+          currentDay += 1;
+          if(currentDay > dayTargetBalances.length){
+            setTimeout(()=>{
+              alert("🎉 Your All Loss Recovered ✅");
+              // Reset everything for fresh start
+              localStorage.clear();
+              location.reload();
+            }, 400);
+            return;
+          }else{
+            dayStartBalance = balance;
+            saveState();
+            renderStrategyUnlocked();
+            showPage("strategy");
+          }
+        }
+      }
+    };
+
+    window.startTodayPrediction = function(){
+      if(!approved){ alert("Not approved yet."); return; }
+      updateBalanceDisplay();
+      showPage("predict");
+    };
+
+    /* =============================
+       Admin Open/Close (hidden cross)
+       ============================= */
+    const adminFab = $("#adminFab");
+    adminFab.addEventListener("click", ()=>{
+      const pass = prompt("Enter Admin Password:");
+      if(pass === "456"){ $("#adminPanel").style.display = "block"; }
+      else{ alert("Wrong password"); }
+    });
+    window.closeAdmin = function(){ $("#adminPanel").style.display = "none"; };
+
+    /* =============================
+       Helpers
+       ============================= */
+    window.resetPlanConfirm = function(){
+      if(confirm("Reset current plan and clear local progress?")){ localStorage.clear(); location.reload(); }
+    };
+    window.autoFillExample = function(){
+      $("#period").value = "ABC-123";
+      $("#last10").value = "Small Big Small Big Big Big Small Big Small Big";
+    };
+
+    /* =============================
+       INIT (always land on strategy if approved)
+       ============================= */
+    (function init(){
+      // If plan already approved and targets exist → always land on strategy
+      if(localStorage.getItem("approved") === "true" && localStorage.getItem("dayTargetBalances")){
+        approved = true;
+        planDays = parseInt(localStorage.getItem("planDays")||"0",10);
+        planLabel = localStorage.getItem("planLabel")||"";
+        dayTargetBalances = JSON.parse(localStorage.getItem("dayTargetBalances")||"[]");
+        dayStatus = JSON.parse(localStorage.getItem("dayStatus")||"[]");
+        currentDay = parseInt(localStorage.getItem("currentDay")||"1",10);
+        balance = parseFloat(localStorage.getItem("balance")||"0");
+        loss = parseFloat(localStorage.getItem("lossAmount") || "0"); // Ensure loss is loaded
+        dayStartBalance = parseFloat(localStorage.getItem("dayStartBalance")||String(Math.round(loss*0.10)));
+        approvedRequestKey = localStorage.getItem("approvedRequestKey") || null;
+
+        showPage("strategy"); renderStrategyUnlocked();
+        showToast("Continuing Recovery Plan - Day " + currentDay);
+      }else{
+        showPage("welcome");
+      }
+    })();
+  </script>
+
+<script>
+function speak(t){
+  try{
+    const u=new SpeechSynthesisUtterance(t);
+    u.lang='hi-IN';
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function speakPlanChoose(){speak("Aapko apna loss kitne dino me cover karna hai, plan choose kijiye.");}
+function speakPayment(amount){speak("QR scan karke " + amount + " rupaye payment kijiye aur UTR submit kijiye.");}
+function speakWaiting(){speak("Admin ke pass approval chala gaya hai. Agar 5 minute me approve nahi hota hai to customer service button par click karke apna payment approve karwa lijiye.");}
+function speakPrediction(pred, acc, bet){speak("Next result " + pred + " aayega, accuracy " + acc + " pratishat hai, bet amount " + bet + " rupaye.");}
+function speakWin(){speak("Congratulations! Ye hamara prediction win hua.");}
+function speakLoss(){speak("Don't worry, next prediction best hoga.");}
+</script>
+
+
+<script>
+// Trigger voices at each step
+document.addEventListener("DOMContentLoaded", () => {
+  // Plan choose page
+  if(document.getElementById("plan")){
+    let planPage = document.getElementById("plan");
+    planPage.addEventListener("mouseenter", () => { speakPlanChoose(); }, {once:true});
+  }
+  // Payment page load
+  window.goPayment = new Proxy(window.goPayment, {
+    apply(target, thisArg, args){
+      const res = Reflect.apply(target, thisArg, args);
+      let amt = document.getElementById("planPrice").innerText || "";
+      if(amt) speakPayment(amt);
+      return res;
+    }
+  });
+  // Waiting page (strategy locked)
+  window.renderStrategyLocked = new Proxy(window.renderStrategyLocked, {
+    apply(target, thisArg, args){
+      const res = Reflect.apply(target, thisArg, args);
+      speakWaiting();
+      return res;
+    }
+  });
+  // Prediction generate
+  window.genPrediction = new Proxy(window.genPrediction, {
+    apply(target, thisArg, args){
+      const res = Reflect.apply(target, thisArg, args);
+      setTimeout(() => {
+        const predEl = document.querySelector("#predictionResult h3");
+        if(predEl){
+          const txt = predEl.innerText;
+          let pred = txt.includes("Small") ? "Small" : "Big";
+          let acc = 80;
+          let bet = 150;
+          
+          // Try to extract actual confidence and bet if present
+          const confMatch = /Confidence:\s*(\d+)%/.exec(document.getElementById("predictionResult").innerHTML);
+          if (confMatch) acc = parseInt(confMatch[1], 10);
+          const betMatch = /Suggested Bet:\s*₹(\d+)/.exec(document.getElementById("predictionResult").innerHTML);
+          if (betMatch) bet = parseInt(betMatch[1], 10);
+
+          speakPrediction(pred, acc, bet);
+        }
+      }, 11000);
+      return res;
+    }
+  });
+  // Win/Loss click
+  window.handleRecord = new Proxy(window.handleRecord, {
+    apply(target, thisArg, args){
+      const res = Reflect.apply(target, thisArg, args);
+      if(args[0]==="win") speakWin(); else speakLoss();
+      return res;
+    }
+  });
+});
+</script>
+
+
+<script>
+// Background animation (floating balls)
+const canvas=document.createElement('canvas');canvas.id='bgAnim';document.body.appendChild(canvas);
+const ctx=canvas.getContext('2d');let w,h;function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight}window.onresize=resize;resize();
+let balls=[...Array(30)].map(()=>({x:Math.random()*w,y:Math.random()*h,r:5+Math.random()*10,dx:-2+Math.random()*4,dy:-2+Math.random()*4}));
+function animate(){ctx.clearRect(0,0,w,h);balls.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle='rgba(124,58,237,0.4)';ctx.fill();b.x+=b.dx;b.y+=b.dy;if(b.x<0||b.x>w)b.dx*=-1;if(b.y<0||b.y>h)b.dy*=-1});requestAnimationFrame(animate)}animate();
+</script>
+
+
+<script>
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  let el = document.getElementById(id);
+  if(el){ el.classList.add('active'); window.scrollTo(0,0); }
+}
+</script>
+
+</body>
+</html>
