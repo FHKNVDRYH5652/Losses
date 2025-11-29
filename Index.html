@@ -172,6 +172,25 @@ tbody tr:hover td {background:rgba(255,152,0,0.2)}
     outline: 2px solid var(--color-yellow) !important;
 }
 
+/* QR Code Container Styling */
+.qr-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto;
+    max-width: 260px;
+    height: 260px; /* Fixed height for container */
+    border-radius: 20px;
+    background: #0a0b25; /* Dark background for contrast */
+    box-shadow: 0 0 25px var(--color-cyan); /* Neon Shadow */
+    padding: 10px;
+}
+.qr-container img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 15px;
+}
+
 </style>
 
 
@@ -225,8 +244,12 @@ table th {
 
     <div id="payment" class="page">
       <h2 id="planName"></h2>
-      <p>Amount to Pay: ₹<span id="planPrice"></span></p><p><img id="qrImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAGaAQAAAAAefbjOAAAC8klEQVR4nO2cQW7jMAxFP8cGspSBHiBHkW9W9Gb2UXIDa2nAwZ8FRdkJOotMWjux6UXqVH4IhSrkF0lViIev/s/jDOCQQw455JBDDu0TknzVQN8AIlJjfgske6DdxDyH1ociSXIA5PMiQnIC4gAgXmoAqEiSvIXWM88h9aFkDqBvAGlTDXZhFJEmP6AuYyvzHNoQCtkVSJtqALjKb32SQ+8AsdOfV0F/5j+SFW82J4ceulQfZB1R6YsOdDaaB8pz3YvPyaEfgHoR1QzSAkAcKsrnUFHaVENaXHWrsZV5Dq0HqVq8iQ5XITAKEOaX2/Dx4nNy6BnoPmoAqMgOFRE5QQNGp7+zIOJRY89QUQoAycmUZShnABA1PVG5jjgAZF97fWPuQa9Acw9hgi0aXxE7h8xHWOjI+QhbDNkzDB41DgZpNqqXWl1BvsIo/DqPAk1TBc9iHwkKo7ALE6RNtsmMlxMRh2XWStqNzHNoNWgRNXSvEQcbibb1UGU5P+xR4whQqoH+PEG3GSVxichR+CUnq3VsZJ5Dq0GWj9AENrQurqmILuQBU5uT+4gDQHlFlL/5vK9YxIoOOVvh+Yj9Q7YiAORUhLqC5WK48yC+InYNLaKG5SPMFZBFUQTPWR4GqudbIjV2BwBIH0TfVgBQUXrNTKxrnkOrQ6XSNcH05OwjWGJFbrt0Zbl/qPiIikBqSqstAKQGRCAE6YMAJht58Tk59Ay08BG5oGVCM/dik7nS1cF9xBGg+yWwKHHO4aSMurI8CpS/+4AUOU8QbaNrrqIneBZF0U3Mc2h1aD7TpcGhS/ncTpYV1qefa15vMSeHnoJi2VcgnSitCs160VJlA5uY59AGla5yqDOMgv48ikqIvqmIXkSWnXZvMieHfgSKl5P10qUaiMNVsvhMfhL4kJCmJpOoo5BW9aRpzM3Nc+i3oW/OdAHaZzn3Z+fCVz7Y5bvPXUPLfETpl9LF0IWiNucBXxF7h8T/M5lDDjnkkEMOOfSf0F/nUYWnyRzV2gAAAABJRU5ErkJggg==" style="display:block;margin:20px auto;max-width:260px;border-radius:20px;box-shadow:0 0 25px cyan"/></p>
-      <img src="qr.png" class="qr-code" alt="QR Code" style="display:none;"/>
+      <p>Amount to Pay: ₹<span id="planPrice"></span></p>
+      
+      <div class="qr-container">
+        <img src="qr.png" class="qr-code" alt="QR Code" />
+      </div>
+
       <p class="hint">Scan & pay using QR. Enter UTR below and submit for admin approval.</p>
       <input type="text" id="utr" placeholder="Enter UTR / Transaction ID" />
       <div>
